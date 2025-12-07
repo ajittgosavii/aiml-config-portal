@@ -32,7 +32,7 @@ if 'wizard_data' not in st.session_state:
     st.session_state.wizard_data = {}
 
 # IMPORTANT: Set your actual dashboard URL here
-DASHBOARD_URL = "https://your-dashboard-url.streamlit.app"  # UPDATE THIS!
+DASHBOARD_URL = "https://aimldashboards.streamlit.app/"  # UPDATE THIS!
 
 # Mock plugin data
 MOCK_PLUGINS = {
