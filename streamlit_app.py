@@ -1,7 +1,7 @@
 # streamlit_app.py
 """
 AI/ML Observability Platform - Configuration Portal
-Professional Edition with Modern UI
+Corporate Professional Edition
 """
 
 import streamlit as st
@@ -30,6 +30,9 @@ if 'wizard_step' not in st.session_state:
     st.session_state.wizard_step = 1
 if 'wizard_data' not in st.session_state:
     st.session_state.wizard_data = {}
+
+# IMPORTANT: Set your actual dashboard URL here
+DASHBOARD_URL = "https://aimlobs.streamlit.app/"  # UPDATE THIS!
 
 # Mock plugin data
 MOCK_PLUGINS = {
@@ -155,89 +158,93 @@ MOCK_PLUGINS = {
     ]
 }
 
-# Professional CSS with modern design
+# Corporate Professional CSS
 st.markdown("""
 <style>
     /* Global Styles */
     .main {
-        background-color: #f8f9fa;
+        background-color: #f5f7fa;
+    }
+    
+    /* Remove default Streamlit padding */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
     
     /* Header Styles */
     .main-header {
         font-size: 2.5rem;
         font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: #1e3a5f;
         margin-bottom: 0.5rem;
         letter-spacing: -0.5px;
     }
     
     .sub-header {
         font-size: 1.1rem;
-        color: #6c757d;
+        color: #64748b;
         margin-bottom: 2rem;
         font-weight: 400;
     }
     
-    /* Metric Cards - Professional Design */
+    /* Metric Cards - Corporate Design */
     .metric-card {
         background: white;
         padding: 2rem 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        border: 1px solid #e9ecef;
-        transition: all 0.3s ease;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
         height: 100%;
     }
     
     .metric-card:hover {
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         transform: translateY(-2px);
+        border-color: #3b82f6;
     }
     
     .metric-icon {
         font-size: 2.5rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
     }
     
     .metric-value {
         font-size: 2.5rem;
         font-weight: 700;
-        color: #212529;
+        color: #1e293b;
         margin: 0.5rem 0;
     }
     
     .metric-label {
-        font-size: 0.9rem;
-        color: #6c757d;
+        font-size: 0.875rem;
+        color: #64748b;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 600;
     }
     
     .metric-sublabel {
-        font-size: 0.85rem;
-        color: #adb5bd;
+        font-size: 0.8rem;
+        color: #94a3b8;
         margin-top: 0.25rem;
     }
     
-    /* Plugin Cards - Modern Design */
+    /* Plugin Cards - Corporate Design */
     .plugin-card {
         background: white;
         padding: 1.5rem;
-        border-radius: 10px;
-        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
         margin-bottom: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     
     .plugin-card:hover {
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        border-color: #667eea;
+        border-color: #3b82f6;
         transform: translateY(-2px);
     }
     
@@ -255,12 +262,12 @@ st.markdown("""
     .plugin-name {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #212529;
+        color: #1e293b;
         margin: 0;
     }
     
     .plugin-description {
-        color: #6c757d;
+        color: #64748b;
         font-size: 0.9rem;
         margin: 0.5rem 0 1rem 0;
         line-height: 1.5;
@@ -273,17 +280,17 @@ st.markdown("""
     }
     
     .plugin-category {
-        color: #667eea;
+        color: #3b82f6;
         font-weight: 600;
     }
     
     .plugin-pricing {
-        color: #28a745;
+        color: #10b981;
         font-weight: 600;
     }
     
     .plugin-pricing-pro {
-        color: #ffc107;
+        color: #f59e0b;
         font-weight: 600;
     }
     
@@ -291,7 +298,7 @@ st.markdown("""
     .status-badge {
         display: inline-block;
         padding: 0.25rem 0.75rem;
-        border-radius: 20px;
+        border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
@@ -299,40 +306,40 @@ st.markdown("""
     }
     
     .status-active {
-        background: #d4edda;
-        color: #155724;
+        background: #d1fae5;
+        color: #065f46;
     }
     
     .status-inactive {
-        background: #f8d7da;
-        color: #721c24;
+        background: #fee2e2;
+        color: #991b1b;
     }
     
     /* Alert Boxes */
     .alert-success {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 8px;
+        background: #d1fae5;
+        border: 1px solid #a7f3d0;
+        border-radius: 6px;
         padding: 1rem 1.25rem;
-        color: #155724;
+        color: #065f46;
         margin: 1rem 0;
     }
     
     .alert-info {
-        background: #d1ecf1;
-        border: 1px solid #bee5eb;
-        border-radius: 8px;
+        background: #dbeafe;
+        border: 1px solid #bfdbfe;
+        border-radius: 6px;
         padding: 1rem 1.25rem;
-        color: #0c5460;
+        color: #1e40af;
         margin: 1rem 0;
     }
     
     .alert-warning {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 8px;
+        background: #fef3c7;
+        border: 1px solid #fde68a;
+        border-radius: 6px;
         padding: 1rem 1.25rem;
-        color: #856404;
+        color: #92400e;
         margin: 1rem 0;
     }
     
@@ -340,9 +347,10 @@ st.markdown("""
     .wizard-progress {
         background: white;
         padding: 1.5rem;
-        border-radius: 10px;
+        border-radius: 8px;
         margin-bottom: 2rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
     }
     
     .wizard-step {
@@ -354,8 +362,8 @@ st.markdown("""
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: #e9ecef;
-        color: #6c757d;
+        background: #e2e8f0;
+        color: #64748b;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -364,91 +372,119 @@ st.markdown("""
     }
     
     .wizard-step-active .wizard-step-number {
-        background: #667eea;
+        background: #3b82f6;
         color: white;
     }
     
     .wizard-step-complete .wizard-step-number {
-        background: #28a745;
+        background: #10b981;
         color: white;
     }
     
     .wizard-step-label {
         font-size: 0.85rem;
-        color: #6c757d;
+        color: #64748b;
         font-weight: 600;
     }
     
     .wizard-step-active .wizard-step-label {
-        color: #667eea;
+        color: #3b82f6;
     }
     
     /* Section Headers */
     .section-header {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #212529;
+        color: #1e293b;
         margin: 2rem 0 1rem 0;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e9ecef;
+        border-bottom: 2px solid #e2e8f0;
     }
     
     /* Feature Grid */
     .feature-item {
         background: white;
         padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 4px solid #667eea;
+        border-radius: 8px;
+        border-left: 4px solid #3b82f6;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     
     .feature-title {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #212529;
+        color: #1e293b;
         margin-bottom: 0.5rem;
     }
     
     .feature-description {
-        color: #6c757d;
+        color: #64748b;
         font-size: 0.9rem;
         line-height: 1.6;
     }
     
     /* Buttons Enhancement */
     .stButton > button {
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: 600;
         padding: 0.5rem 1.5rem;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
     
     .stButton > button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
     }
     
-    /* Sidebar Styling */
+    /* Sidebar Styling - Corporate Professional */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        background: #1e293b;
     }
     
-    [data-testid="stSidebar"] .css-1d391kg {
-        color: white;
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] label {
+        color: #e2e8f0 !important;
+    }
+    
+    [data-testid="stSidebar"] .stRadio > label {
+        color: #e2e8f0 !important;
+    }
+    
+    /* Dashboard Link Styling */
+    .dashboard-link {
+        display: block;
+        background: #3b82f6;
+        color: white !important;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        margin: 1rem 0;
+    }
+    
+    .dashboard-link:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59,130,246,0.3);
     }
     
     /* Footer */
     .footer {
         text-align: center;
         padding: 2rem 0;
-        color: #6c757d;
-        border-top: 1px solid #e9ecef;
+        color: #64748b;
+        border-top: 1px solid #e2e8f0;
         margin-top: 3rem;
     }
     
     .footer a {
-        color: #667eea;
+        color: #3b82f6;
         text-decoration: none;
     }
     
@@ -469,7 +505,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar Navigation with modern styling
+# Sidebar Navigation - Corporate Professional
 st.sidebar.markdown("# ⚙️ Configuration Portal")
 st.sidebar.markdown("---")
 
@@ -481,7 +517,13 @@ page = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Monitoring")
-st.sidebar.markdown("**[Open Dashboard →](#)**")
+
+# WORKING DASHBOARD LINK
+st.sidebar.markdown(f"""
+<a href="{DASHBOARD_URL}" target="_blank" class="dashboard-link">
+    📈 Open Dashboard →
+</a>
+""", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 💡 Quick Stats")
@@ -629,7 +671,7 @@ elif page == "🎯 Quick Setup Wizard":
             """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Step content
+    # Step content (same as before)
     if st.session_state.wizard_step == 1:
         st.markdown("### Step 1: Create Workspace")
         st.markdown("Define your workspace for organizing pipelines and resources.")
@@ -1081,6 +1123,6 @@ st.markdown("""
         <a href="#">Documentation</a> • 
         <a href="#">Support</a>
     </p>
-    <p style="color: #adb5bd; font-size: 0.85rem;">© 2024 Your Company. All rights reserved.</p>
+    <p style="color: #94a3b8; font-size: 0.85rem;">© 2024 Your Company. All rights reserved.</p>
 </div>
 """, unsafe_allow_html=True)
