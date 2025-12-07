@@ -1,4 +1,4 @@
-# config_portal.py
+# streamlit_app.py
 """
 AI/ML Observability Platform - Configuration Portal
 Self-service interface for engineers to configure data pipelines
@@ -7,195 +7,256 @@ Self-service interface for engineers to configure data pipelines
 import streamlit as st
 import json
 from typing import Dict, List, Any
-import sys
-import os
-
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-# Import plugin system (would be from package in production)
-try:
-    from plugin_manager import (
-        PluginRegistry, PluginManager, Pipeline,
-        PluginType, PluginMetadata, ConfigField
-    )
-    # Register example plugins
-    from plugins.http_input import HTTPInputPlugin
-    from plugins.json_parser import JSONParserPlugin
-    from plugins.webhook_output import WebhookOutputPlugin
-    from plugins.slack_alert import SlackAlertPlugin
-    
-    # Initialize plugin registry
-    if 'plugin_registry' not in st.session_state:
-        registry = PluginRegistry()
-        registry.register(HTTPInputPlugin)
-        registry.register(JSONParserPlugin)
-        registry.register(WebhookOutputPlugin)
-        registry.register(SlackAlertPlugin)
-        st.session_state.plugin_registry = registry
-        st.session_state.plugin_manager = PluginManager(registry)
-        st.session_state.pipelines = {}
-    
-    PLUGINS_AVAILABLE = True
-except Exception as e:
-    PLUGINS_AVAILABLE = False
-    st.error(f"⚠️ Plugin system not available: {e}")
+from datetime import datetime
 
 # Page config
 st.set_page_config(
-    page_title="Configuration Portal - AI/ML Observability",
+    page_title="AI/ML Observability - Config Portal",
     page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Initialize ALL session state variables at the very start
+if 'workspaces' not in st.session_state:
+    st.session_state.workspaces = []
+if 'current_workspace' not in st.session_state:
+    st.session_state.current_workspace = None
+if 'pipelines' not in st.session_state:
+    st.session_state.pipelines = []
+if 'plugin_configs' not in st.session_state:
+    st.session_state.plugin_configs = []
+if 'wizard_step' not in st.session_state:
+    st.session_state.wizard_step = 1
+if 'wizard_data' not in st.session_state:
+    st.session_state.wizard_data = {}
+
+# Mock plugin data (no imports needed!)
+MOCK_PLUGINS = {
+    'input': [
+        {
+            'name': 'HTTP Endpoint',
+            'description': 'Receive logs via HTTP POST',
+            'category': 'input',
+            'pricing': 'Free',
+            'icon': '🌐'
+        },
+        {
+            'name': 'AWS CloudWatch',
+            'description': 'Ingest from CloudWatch Logs',
+            'category': 'input',
+            'pricing': 'Pro',
+            'icon': '☁️'
+        },
+        {
+            'name': 'Kubernetes',
+            'description': 'Collect from K8s clusters',
+            'category': 'input',
+            'pricing': 'Pro',
+            'icon': '⎈'
+        },
+        {
+            'name': 'Syslog',
+            'description': 'Standard syslog protocol',
+            'category': 'input',
+            'pricing': 'Free',
+            'icon': '📋'
+        }
+    ],
+    'processing': [
+        {
+            'name': 'JSON Parser',
+            'description': 'Parse and flatten JSON logs',
+            'category': 'processing',
+            'pricing': 'Free',
+            'icon': '📝'
+        },
+        {
+            'name': 'Regex Parser',
+            'description': 'Extract fields using regex',
+            'category': 'processing',
+            'pricing': 'Free',
+            'icon': '🔍'
+        },
+        {
+            'name': 'PII Masking',
+            'description': 'Mask sensitive data',
+            'category': 'processing',
+            'pricing': 'Pro',
+            'icon': '🔒'
+        },
+        {
+            'name': 'Geo-IP Lookup',
+            'description': 'Enrich with location data',
+            'category': 'processing',
+            'pricing': 'Pro',
+            'icon': '🌍'
+        }
+    ],
+    'output': [
+        {
+            'name': 'Webhook',
+            'description': 'Send to HTTP endpoint',
+            'category': 'output',
+            'pricing': 'Free',
+            'icon': '🔗'
+        },
+        {
+            'name': 'Splunk HEC',
+            'description': 'Send to Splunk via HEC',
+            'category': 'output',
+            'pricing': 'Pro',
+            'icon': '📊'
+        },
+        {
+            'name': 'S3 Bucket',
+            'description': 'Store in AWS S3',
+            'category': 'output',
+            'pricing': 'Pro',
+            'icon': '🗄️'
+        },
+        {
+            'name': 'Elasticsearch',
+            'description': 'Index in Elasticsearch',
+            'category': 'output',
+            'pricing': 'Pro',
+            'icon': '🔎'
+        }
+    ],
+    'alert': [
+        {
+            'name': 'Slack',
+            'description': 'Send alerts to Slack',
+            'category': 'alert',
+            'pricing': 'Free',
+            'icon': '💬'
+        },
+        {
+            'name': 'PagerDuty',
+            'description': 'Create PagerDuty incidents',
+            'category': 'alert',
+            'pricing': 'Pro',
+            'icon': '🚨'
+        },
+        {
+            'name': 'Email',
+            'description': 'Send email notifications',
+            'category': 'alert',
+            'pricing': 'Free',
+            'icon': '📧'
+        },
+        {
+            'name': 'Microsoft Teams',
+            'description': 'Post to Teams channels',
+            'category': 'alert',
+            'pricing': 'Pro',
+            'icon': '👥'
+        }
+    ]
+}
+
 # Custom CSS
 st.markdown("""
 <style>
-    /* Modern dark theme */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1f2e 0%, #2d3748 100%);
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #1f77b4;
+        margin-bottom: 0.5rem;
     }
-    
-    /* Plugin cards */
+    .sub-header {
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 2rem;
+    }
     .plugin-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 1.5rem;
         border-radius: 10px;
-        margin: 1rem 0;
         color: white;
+        margin-bottom: 1rem;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    
     .plugin-card-free {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    }
-    
-    .plugin-card-enterprise {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     }
-    
-    /* Status badges */
-    .status-healthy {
-        background-color: #10b981;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.875rem;
-        font-weight: 600;
+    .plugin-card-pro {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     }
-    
-    .status-warning {
-        background-color: #f59e0b;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.875rem;
-        font-weight: 600;
-    }
-    
-    /* Configuration wizard */
-    .wizard-step {
-        background: #f3f4f6;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-    }
-    
-    .wizard-step-active {
-        background: #dbeafe;
-        border-left: 4px solid #3b82f6;
-    }
-    
-    .wizard-step-complete {
-        background: #d1fae5;
-        border-left: 4px solid #10b981;
-    }
-    
-    /* Form styling */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div > select {
-        border-radius: 6px;
-    }
-    
-    /* Pipeline builder */
-    .pipeline-node {
+    .metric-card {
         background: white;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 4px solid #1f77b4;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    
-    .pipeline-arrow {
-        text-align: center;
-        font-size: 1.5rem;
-        color: #6b7280;
-        margin: 0.5rem 0;
+    .success-box {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 5px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    .warning-box {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    .wizard-step {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #1f77b4;
+    }
+    .wizard-step-active {
+        background: #e7f3ff;
+        border-left-color: #0066cc;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'current_step' not in st.session_state:
-    st.session_state.current_step = 0
-    st.session_state.workspace_config = {}
-    st.session_state.selected_inputs = []
-    st.session_state.selected_processors = []
-    st.session_state.selected_outputs = []
-    st.session_state.configured_plugins = {}
+# Sidebar Navigation
+st.sidebar.title("⚙️ Configuration Portal")
+st.sidebar.markdown("---")
 
-# Header
-st.markdown("# ⚙️ Configuration Portal")
-st.markdown("### Configure your AI/ML observability pipeline in minutes")
+page = st.sidebar.radio(
+    "Navigation",
+    ["🏠 Home", "🎯 Quick Setup Wizard", "🔌 Plugin Marketplace", "📊 Pipeline Builder", "⚙️ Settings", "📚 Documentation"]
+)
 
-# Sidebar navigation
-with st.sidebar:
-    st.markdown("## 🧭 Navigation")
-    
-    page = st.radio(
-        "Choose a page:",
-        [
-            "🏠 Dashboard",
-            "🔌 Plugin Marketplace",
-            "🎯 Quick Setup Wizard",
-            "⚡ Pipeline Builder",
-            "🔧 Plugin Configuration",
-            "📊 Monitoring",
-            "📚 Documentation"
-        ],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("---")
-    st.markdown("### 💡 Quick Stats")
-    
-    if PLUGINS_AVAILABLE:
-        registry = st.session_state.plugin_registry
-        manager = st.session_state.plugin_manager
-        
-        input_plugins = len(registry.list_plugins(PluginType.INPUT))
-        processing_plugins = len(registry.list_plugins(PluginType.PROCESSING))
-        output_plugins = len(registry.list_plugins(PluginType.OUTPUT))
-        alert_plugins = len(registry.list_plugins(PluginType.ALERT))
-        
-        st.metric("Available Plugins", input_plugins + processing_plugins + output_plugins + alert_plugins)
-        st.metric("Configured Instances", len(manager.list_instances()))
-        st.metric("Active Pipelines", len(st.session_state.pipelines))
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📊 Dashboard")
+st.sidebar.markdown("[📈 Open Monitoring Dashboard](#)")
 
-# Main content based on selected page
-if page == "🏠 Dashboard":
-    st.markdown("## Welcome to Your Configuration Portal")
+# Main content based on page selection
+if page == "🏠 Home":
+    st.markdown('<div class="main-header">🚀 AI/ML Observability Platform</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Self-Service Configuration Portal</div>', unsafe_allow_html=True)
     
-    col1, col2, col3, col4 = st.columns(4)
+    st.markdown("""
+    Welcome to the AI/ML Observability Configuration Portal! This self-service platform allows you to:
+    
+    - 🎯 **Configure data pipelines** in minutes without coding
+    - 🔌 **Choose from 50+ plugins** for inputs, processing, outputs, and alerts
+    - 📊 **Monitor your systems** with real-time dashboards
+    - 🚀 **Deploy instantly** with zero DevOps required
+    
+    **Get started in 30 minutes** - No infrastructure setup needed!
+    """)
+    
+    # Stats overview
+    st.markdown("### 📊 Platform Overview")
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown('<div class="plugin-card plugin-card-free">', unsafe_allow_html=True)
+        st.markdown('<div class="plugin-card">', unsafe_allow_html=True)
         st.markdown("### 🔌 Plugins")
-        if PLUGINS_AVAILABLE:
-            total_plugins = len(st.session_state.plugin_registry.list_plugins())
-            st.markdown(f"### {total_plugins}")
+        total_plugins = sum(len(plugins) for plugins in MOCK_PLUGINS.values())
+        st.markdown(f"### {total_plugins}")
         st.markdown("Available")
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -207,607 +268,447 @@ if page == "🏠 Dashboard":
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col3:
-        st.markdown('<div class="plugin-card">', unsafe_allow_html=True)
-        st.markdown("### 📊 Data Flow")
-        st.markdown("### 0 GB/day")
-        st.markdown("Processing")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown('<div class="plugin-card">', unsafe_allow_html=True)
-        st.markdown("### ✅ Health")
-        st.markdown('<div class="status-healthy">All Systems Operational</div>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="plugin-card plugin-card-pro">', unsafe_allow_html=True)
+        st.markdown("### 👥 Workspaces")
+        st.markdown(f"### {len(st.session_state.workspaces) if len(st.session_state.workspaces) > 0 else 'Demo'}")
+        st.markdown("Active")
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # Quick Start Guide
-    st.markdown("## 🚀 Quick Start")
+    # Quick actions
+    st.markdown("### 🎯 Quick Actions")
+    col1, col2, col3 = st.columns(3)
     
-    with st.expander("⚡ Set up your first pipeline in 5 minutes", expanded=True):
+    with col1:
+        if st.button("🎯 Start Quick Setup", type="primary", use_container_width=True):
+            st.info("Navigate to '🎯 Quick Setup Wizard' in the sidebar!")
+    
+    with col2:
+        if st.button("🔌 Browse Plugins", use_container_width=True):
+            st.info("Navigate to '🔌 Plugin Marketplace' in the sidebar!")
+    
+    with col3:
+        if st.button("📚 View Docs", use_container_width=True):
+            st.info("Navigate to '📚 Documentation' in the sidebar!")
+    
+    st.markdown("---")
+    
+    # Features
+    st.markdown("### ✨ Key Features")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
         st.markdown("""
-        1. **Choose Data Sources** - Select where your logs come from (CloudWatch, K8s, HTTP, etc.)
-        2. **Configure Processing** - Add parsers, filters, enrichment
-        3. **Set Destinations** - Choose where to send processed logs (Splunk, S3, etc.)
-        4. **Configure Alerts** - Set up notifications for critical events
-        5. **Deploy** - Activate your pipeline with one click
+        **🚀 Self-Service Configuration**
+        - Visual pipeline builder
+        - No coding required
+        - Test before deploying
+        - Instant activation
         
-        [Start Quick Setup Wizard →](#)
+        **🔌 Plugin Marketplace**
+        - 50+ ready-to-use plugins
+        - Input, processing, output, alerts
+        - Free and premium options
+        - One-click installation
         """)
     
-    with st.expander("📖 Browse Plugin Marketplace"):
+    with col2:
         st.markdown("""
-        Explore 50+ ready-to-use plugins:
-        - **Input Plugins**: AWS, Azure, GCP, Kubernetes, HTTP, Syslog
-        - **Processing Plugins**: Parsers, filters, enrichment, PII masking
-        - **Output Plugins**: Splunk, Elasticsearch, S3, Snowflake
-        - **Alert Plugins**: Slack, PagerDuty, ServiceNow, Email
+        **📊 Real-Time Monitoring**
+        - Live dashboards
+        - Performance metrics
+        - Error tracking
+        - Usage analytics
         
-        [Browse Plugins →](#)
+        **🔒 Enterprise Security**
+        - Multi-tenant isolation
+        - SSO integration
+        - RBAC controls
+        - Audit logging
         """)
-    
-    # Recent Activity
-    st.markdown("## 📝 Recent Activity")
-    
-    if not st.session_state.pipelines:
-        st.info("👋 No pipelines configured yet. Use the Quick Setup Wizard to get started!")
-    else:
-        for pipeline_name in st.session_state.pipelines:
-            st.markdown(f"✅ Pipeline '{pipeline_name}' deployed")
-
-elif page == "🔌 Plugin Marketplace":
-    st.markdown("## 🔌 Plugin Marketplace")
-    st.markdown("Browse and install ready-to-use plugins for your observability platform")
-    
-    if not PLUGINS_AVAILABLE:
-        st.error("Plugin system not initialized")
-        st.stop()
-    
-    # Category filter
-    category_filter = st.selectbox(
-        "Filter by category:",
-        ["All", "Input", "Processing", "Output", "Alert", "Analytics"]
-    )
-    
-    # Get plugins
-    registry = st.session_state.plugin_registry
-    
-    if category_filter == "All":
-        plugins = registry.list_plugins()
-    else:
-        category_map = {
-            "Input": PluginType.INPUT,
-            "Processing": PluginType.PROCESSING,
-            "Output": PluginType.OUTPUT,
-            "Alert": PluginType.ALERT,
-            "Analytics": PluginType.ANALYTICS
-        }
-        plugins = registry.list_plugins(category_map[category_filter])
-    
-    # Display plugins in grid
-    cols_per_row = 2
-    for i in range(0, len(plugins), cols_per_row):
-        cols = st.columns(cols_per_row)
-        
-        for j in range(cols_per_row):
-            if i + j < len(plugins):
-                plugin = plugins[i + j]
-                
-                with cols[j]:
-                    pricing_class = "plugin-card-free" if plugin['pricing'] == "free" else "plugin-card-enterprise"
-                    st.markdown(f'<div class="plugin-card {pricing_class}">', unsafe_allow_html=True)
-                    
-                    st.markdown(f"### {plugin['name']}")
-                    st.markdown(f"**Category**: {plugin['category']}")
-                    st.markdown(f"**Version**: {plugin['version']}")
-                    st.markdown(f"{plugin['description']}")
-                    st.markdown(f"**Pricing**: {plugin['pricing'].upper()}")
-                    st.markdown(f"**Tags**: {', '.join(plugin['tags'][:3])}")
-                    
-                    if st.button(f"Configure {plugin['name']}", key=f"config_{plugin['id']}"):
-                        st.session_state.selected_plugin = plugin['id']
-                        st.rerun()
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "🎯 Quick Setup Wizard":
-    st.markdown("## 🎯 Quick Setup Wizard")
-    st.markdown("Configure your complete observability pipeline step-by-step")
+    st.markdown('<div class="main-header">🎯 Quick Setup Wizard</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Configure your first pipeline in 6 easy steps</div>', unsafe_allow_html=True)
     
-    if not PLUGINS_AVAILABLE:
-        st.error("Plugin system not initialized")
-        st.stop()
-    
-    # Progress tracker
-    steps = [
-        "Workspace",
-        "Data Sources",
-        "Processing",
-        "Outputs",
-        "Alerts",
-        "Review"
-    ]
-    
-    current_step = st.session_state.current_step
-    
-    # Progress bar
-    progress_col1, progress_col2 = st.columns([3, 1])
-    with progress_col1:
-        st.progress((current_step + 1) / len(steps))
-    with progress_col2:
-        st.markdown(f"**Step {current_step + 1} of {len(steps)}**")
-    
-    # Step indicators
-    step_cols = st.columns(len(steps))
-    for i, step_name in enumerate(steps):
-        with step_cols[i]:
-            if i < current_step:
-                st.markdown(f"✅ {step_name}")
-            elif i == current_step:
-                st.markdown(f"➡️ **{step_name}**")
+    # Progress indicator
+    steps = ["Workspace", "Input", "Processing", "Output", "Alerts", "Review"]
+    cols = st.columns(6)
+    for idx, (col, step) in enumerate(zip(cols, steps)):
+        with col:
+            if idx + 1 < st.session_state.wizard_step:
+                st.success(f"✅ {step}")
+            elif idx + 1 == st.session_state.wizard_step:
+                st.info(f"▶️ {step}")
             else:
-                st.markdown(f"⭕ {step_name}")
+                st.text(f"⭕ {step}")
     
     st.markdown("---")
     
     # Step content
-    if current_step == 0:  # Workspace
-        st.markdown("### 🏢 Workspace Configuration")
+    if st.session_state.wizard_step == 1:
+        st.markdown("### Step 1: Create Workspace")
         
-        workspace_name = st.text_input(
-            "Workspace Name",
-            value=st.session_state.workspace_config.get('name', ''),
-            placeholder="My Company Observability"
-        )
+        workspace_name = st.text_input("Workspace Name", placeholder="e.g., Production ML Monitoring")
+        workspace_desc = st.text_area("Description", placeholder="e.g., Monitor production ML models and data pipelines")
         
-        workspace_tier = st.selectbox(
-            "Tier",
-            ["Starter (Free)", "Professional ($499/mo)", "Enterprise (Custom)"]
-        )
-        
-        workspace_region = st.selectbox(
-            "Region",
-            ["US East (N. Virginia)", "EU West (Ireland)", "AP South (Mumbai)"]
-        )
-        
-        if st.button("Next →", type="primary"):
-            st.session_state.workspace_config = {
-                'name': workspace_name,
-                'tier': workspace_tier,
-                'region': workspace_region
-            }
-            st.session_state.current_step = 1
-            st.rerun()
-    
-    elif current_step == 1:  # Data Sources
-        st.markdown("### 📥 Select Data Sources")
-        
-        registry = st.session_state.plugin_registry
-        input_plugins = registry.list_plugins(PluginType.INPUT)
-        
-        st.markdown("Choose which data sources to connect:")
-        
-        selected = []
-        for plugin in input_plugins:
-            if st.checkbox(
-                f"{plugin['name']} - {plugin['description'][:80]}...",
-                key=f"input_{plugin['id']}"
-            ):
-                selected.append(plugin['id'])
-        
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([1, 5])
         with col1:
-            if st.button("← Back"):
-                st.session_state.current_step = 0
+            if st.button("Next Step ➡️", type="primary"):
+                if workspace_name:
+                    st.session_state.wizard_data['workspace_name'] = workspace_name
+                    st.session_state.wizard_data['workspace_desc'] = workspace_desc
+                    st.session_state.wizard_step = 2
+                    st.rerun()
+                else:
+                    st.error("Please enter a workspace name")
+    
+    elif st.session_state.wizard_step == 2:
+        st.markdown("### Step 2: Select Input Sources")
+        st.markdown("Choose how you want to ingest logs and data:")
+        
+        selected_inputs = []
+        cols = st.columns(2)
+        for idx, plugin in enumerate(MOCK_PLUGINS['input']):
+            with cols[idx % 2]:
+                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"input_{idx}"):
+                    selected_inputs.append(plugin['name'])
+                st.caption(plugin['description'])
+                st.caption(f"💰 {plugin['pricing']}")
+        
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            if st.button("⬅️ Back"):
+                st.session_state.wizard_step = 1
                 st.rerun()
         with col2:
-            if st.button("Next →", type="primary"):
-                st.session_state.selected_inputs = selected
-                st.session_state.current_step = 2
-                st.rerun()
+            if st.button("Next Step ➡️", type="primary"):
+                if selected_inputs:
+                    st.session_state.wizard_data['inputs'] = selected_inputs
+                    st.session_state.wizard_step = 3
+                    st.rerun()
+                else:
+                    st.error("Please select at least one input source")
     
-    elif current_step == 2:  # Processing
-        st.markdown("### ⚙️ Configure Processing")
+    elif st.session_state.wizard_step == 3:
+        st.markdown("### Step 3: Configure Processing")
+        st.markdown("Choose how to process and enrich your data:")
         
-        registry = st.session_state.plugin_registry
-        processing_plugins = registry.list_plugins(PluginType.PROCESSING)
+        selected_processing = []
+        cols = st.columns(2)
+        for idx, plugin in enumerate(MOCK_PLUGINS['processing']):
+            with cols[idx % 2]:
+                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"proc_{idx}"):
+                    selected_processing.append(plugin['name'])
+                st.caption(plugin['description'])
+                st.caption(f"💰 {plugin['pricing']}")
         
-        st.markdown("Add processing steps to transform and enrich your logs:")
-        
-        selected = []
-        for plugin in processing_plugins:
-            if st.checkbox(
-                f"{plugin['name']} - {plugin['description'][:80]}...",
-                key=f"proc_{plugin['id']}"
-            ):
-                selected.append(plugin['id'])
-        
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([1, 5])
         with col1:
-            if st.button("← Back"):
-                st.session_state.current_step = 1
+            if st.button("⬅️ Back"):
+                st.session_state.wizard_step = 2
                 st.rerun()
         with col2:
-            if st.button("Next →", type="primary"):
-                st.session_state.selected_processors = selected
-                st.session_state.current_step = 3
+            if st.button("Next Step ➡️", type="primary"):
+                st.session_state.wizard_data['processing'] = selected_processing
+                st.session_state.wizard_step = 4
                 st.rerun()
     
-    elif current_step == 3:  # Outputs
-        st.markdown("### 📤 Select Output Destinations")
+    elif st.session_state.wizard_step == 4:
+        st.markdown("### Step 4: Select Output Destinations")
+        st.markdown("Choose where to send your processed data:")
         
-        registry = st.session_state.plugin_registry
-        output_plugins = registry.list_plugins(PluginType.OUTPUT)
+        selected_outputs = []
+        cols = st.columns(2)
+        for idx, plugin in enumerate(MOCK_PLUGINS['output']):
+            with cols[idx % 2]:
+                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"output_{idx}"):
+                    selected_outputs.append(plugin['name'])
+                st.caption(plugin['description'])
+                st.caption(f"💰 {plugin['pricing']}")
         
-        st.markdown("Choose where to send processed logs:")
-        
-        selected = []
-        for plugin in output_plugins:
-            if st.checkbox(
-                f"{plugin['name']} - {plugin['description'][:80]}...",
-                key=f"output_{plugin['id']}"
-            ):
-                selected.append(plugin['id'])
-        
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([1, 5])
         with col1:
-            if st.button("← Back"):
-                st.session_state.current_step = 2
+            if st.button("⬅️ Back"):
+                st.session_state.wizard_step = 3
                 st.rerun()
         with col2:
-            if st.button("Next →", type="primary"):
-                st.session_state.selected_outputs = selected
-                st.session_state.current_step = 4
+            if st.button("Next Step ➡️", type="primary"):
+                if selected_outputs:
+                    st.session_state.wizard_data['outputs'] = selected_outputs
+                    st.session_state.wizard_step = 5
+                    st.rerun()
+                else:
+                    st.error("Please select at least one output destination")
+    
+    elif st.session_state.wizard_step == 5:
+        st.markdown("### Step 5: Configure Alerts (Optional)")
+        st.markdown("Set up notifications for important events:")
+        
+        selected_alerts = []
+        cols = st.columns(2)
+        for idx, plugin in enumerate(MOCK_PLUGINS['alert']):
+            with cols[idx % 2]:
+                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"alert_{idx}"):
+                    selected_alerts.append(plugin['name'])
+                st.caption(plugin['description'])
+                st.caption(f"💰 {plugin['pricing']}")
+        
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            if st.button("⬅️ Back"):
+                st.session_state.wizard_step = 4
+                st.rerun()
+        with col2:
+            if st.button("Next Step ➡️", type="primary"):
+                st.session_state.wizard_data['alerts'] = selected_alerts
+                st.session_state.wizard_step = 6
                 st.rerun()
     
-    elif current_step == 4:  # Alerts
-        st.markdown("### 🔔 Configure Alerts")
+    elif st.session_state.wizard_step == 6:
+        st.markdown("### Step 6: Review & Deploy")
+        st.markdown("Review your configuration and deploy:")
         
-        registry = st.session_state.plugin_registry
-        alert_plugins = registry.list_plugins(PluginType.ALERT)
+        st.markdown('<div class="success-box">', unsafe_allow_html=True)
+        st.markdown("#### ✅ Configuration Summary")
         
-        st.markdown("Set up alert notifications:")
+        st.markdown(f"**Workspace:** {st.session_state.wizard_data.get('workspace_name', 'N/A')}")
+        st.markdown(f"**Description:** {st.session_state.wizard_data.get('workspace_desc', 'N/A')}")
         
-        selected = []
-        for plugin in alert_plugins:
-            if st.checkbox(
-                f"{plugin['name']} - {plugin['description'][:80]}...",
-                key=f"alert_{plugin['id']}"
-            ):
-                selected.append(plugin['id'])
+        st.markdown(f"**Input Sources ({len(st.session_state.wizard_data.get('inputs', []))}):**")
+        for input_name in st.session_state.wizard_data.get('inputs', []):
+            st.markdown(f"- {input_name}")
         
-        col1, col2 = st.columns(2)
+        if st.session_state.wizard_data.get('processing'):
+            st.markdown(f"**Processing ({len(st.session_state.wizard_data.get('processing', []))}):**")
+            for proc_name in st.session_state.wizard_data.get('processing', []):
+                st.markdown(f"- {proc_name}")
+        
+        st.markdown(f"**Output Destinations ({len(st.session_state.wizard_data.get('outputs', []))}):**")
+        for output_name in st.session_state.wizard_data.get('outputs', []):
+            st.markdown(f"- {output_name}")
+        
+        if st.session_state.wizard_data.get('alerts'):
+            st.markdown(f"**Alerts ({len(st.session_state.wizard_data.get('alerts', []))}):**")
+            for alert_name in st.session_state.wizard_data.get('alerts', []):
+                st.markdown(f"- {alert_name}")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1, 1, 4])
         with col1:
-            if st.button("← Back"):
-                st.session_state.current_step = 3
+            if st.button("⬅️ Back"):
+                st.session_state.wizard_step = 5
                 st.rerun()
         with col2:
-            if st.button("Next →", type="primary"):
-                st.session_state.selected_alerts = selected
-                st.session_state.current_step = 5
-                st.rerun()
-    
-    elif current_step == 5:  # Review
-        st.markdown("### 📋 Review & Deploy")
-        
-        st.markdown("#### Workspace Configuration")
-        st.json(st.session_state.workspace_config)
-        
-        st.markdown("#### Selected Components")
-        st.markdown(f"**Inputs**: {len(st.session_state.selected_inputs)} plugins")
-        st.markdown(f"**Processors**: {len(st.session_state.selected_processors)} plugins")
-        st.markdown(f"**Outputs**: {len(st.session_state.selected_outputs)} plugins")
-        st.markdown(f"**Alerts**: {len(st.session_state.get('selected_alerts', []))} plugins")
-        
-        st.markdown("#### Estimated Cost")
-        tier = st.session_state.workspace_config.get('tier', '')
-        if 'Starter' in tier:
-            base_cost = 0
-        elif 'Professional' in tier:
-            base_cost = 499
-        else:
-            base_cost = 999
-        
-        st.markdown(f"**${base_cost}/month** (based on selected tier)")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("← Back"):
-                st.session_state.current_step = 4
-                st.rerun()
-        with col2:
-            if st.button("Save as Draft"):
-                st.success("✅ Configuration saved!")
-        with col3:
             if st.button("🚀 Deploy Now", type="primary"):
-                st.success("✅ Pipeline deployed successfully!")
+                # Save pipeline
+                new_pipeline = {
+                    'name': st.session_state.wizard_data.get('workspace_name'),
+                    'created_at': datetime.now().isoformat(),
+                    'config': st.session_state.wizard_data
+                }
+                st.session_state.pipelines.append(new_pipeline)
+                
+                st.success("🎉 Pipeline deployed successfully!")
                 st.balloons()
+                
                 # Reset wizard
-                st.session_state.current_step = 0
+                st.session_state.wizard_step = 1
+                st.session_state.wizard_data = {}
+                
+                st.info("Your pipeline is now active! Check the Pipeline Builder to manage it.")
 
-elif page == "⚡ Pipeline Builder":
-    st.markdown("## ⚡ Pipeline Builder")
-    st.markdown("Visual pipeline configuration with drag-and-drop (simplified version)")
+elif page == "🔌 Plugin Marketplace":
+    st.markdown('<div class="main-header">🔌 Plugin Marketplace</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Browse and install plugins to extend your platform</div>', unsafe_allow_html=True)
     
-    if not PLUGINS_AVAILABLE:
-        st.error("Plugin system not initialized")
-        st.stop()
-    
-    # Pipeline name
-    pipeline_name = st.text_input("Pipeline Name", placeholder="my-production-pipeline")
-    
-    if pipeline_name:
-        # Display pipeline visually
-        st.markdown("### Pipeline Flow")
-        
-        st.markdown('<div class="pipeline-arrow">⬇️</div>', unsafe_allow_html=True)
-        
-        # Inputs
-        st.markdown('<div class="pipeline-node">', unsafe_allow_html=True)
-        st.markdown("#### 📥 Input Sources")
-        input_plugins = st.multiselect(
-            "Select input plugins:",
-            [p['name'] for p in st.session_state.plugin_registry.list_plugins(PluginType.INPUT)],
-            key="pipeline_inputs"
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="pipeline-arrow">⬇️</div>', unsafe_allow_html=True)
-        
-        # Processing
-        st.markdown('<div class="pipeline-node">', unsafe_allow_html=True)
-        st.markdown("#### ⚙️ Processing Steps")
-        processing_plugins = st.multiselect(
-            "Select processing plugins:",
-            [p['name'] for p in st.session_state.plugin_registry.list_plugins(PluginType.PROCESSING)],
-            key="pipeline_processing"
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="pipeline-arrow">⬇️</div>', unsafe_allow_html=True)
-        
-        # Outputs
-        st.markdown('<div class="pipeline-node">', unsafe_allow_html=True)
-        st.markdown("#### 📤 Output Destinations")
-        output_plugins = st.multiselect(
-            "Select output plugins:",
-            [p['name'] for p in st.session_state.plugin_registry.list_plugins(PluginType.OUTPUT)],
-            key="pipeline_outputs"
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Save pipeline
-        if st.button("💾 Save Pipeline", type="primary"):
-            st.session_state.pipelines[pipeline_name] = {
-                'inputs': input_plugins,
-                'processing': processing_plugins,
-                'outputs': output_plugins
-            }
-            st.success(f"✅ Pipeline '{pipeline_name}' saved!")
-
-elif page == "🔧 Plugin Configuration":
-    st.markdown("## 🔧 Plugin Configuration")
-    st.markdown("Configure individual plugin instances with detailed settings")
-    
-    if not PLUGINS_AVAILABLE:
-        st.error("Plugin system not initialized")
-        st.stop()
-    
-    # Select plugin to configure
-    registry = st.session_state.plugin_registry
-    all_plugins = registry.list_plugins()
-    
-    plugin_options = {f"{p['name']} ({p['category']})": p['id'] for p in all_plugins}
-    
-    selected_plugin_name = st.selectbox(
-        "Select plugin to configure:",
-        list(plugin_options.keys())
+    # Category tabs
+    category = st.radio(
+        "Category",
+        ["All", "Input Sources", "Processing", "Outputs", "Alerts"],
+        horizontal=True
     )
     
-    if selected_plugin_name:
-        plugin_id = plugin_options[selected_plugin_name]
-        plugin_class = registry.get_plugin(plugin_id)
-        
-        if plugin_class:
-            instance = plugin_class()
-            metadata = instance.metadata
-            config_schema = instance.config_schema
+    # Filter plugins
+    if category == "All":
+        plugins_to_show = []
+        for cat_plugins in MOCK_PLUGINS.values():
+            plugins_to_show.extend(cat_plugins)
+    elif category == "Input Sources":
+        plugins_to_show = MOCK_PLUGINS['input']
+    elif category == "Processing":
+        plugins_to_show = MOCK_PLUGINS['processing']
+    elif category == "Outputs":
+        plugins_to_show = MOCK_PLUGINS['output']
+    else:  # Alerts
+        plugins_to_show = MOCK_PLUGINS['alert']
+    
+    # Display plugins in grid
+    cols = st.columns(3)
+    for idx, plugin in enumerate(plugins_to_show):
+        with cols[idx % 3]:
+            pricing_class = "plugin-card" if plugin['pricing'] == 'Free' else "plugin-card-pro"
+            st.markdown(f'<div class="{pricing_class}">', unsafe_allow_html=True)
+            st.markdown(f"## {plugin['icon']} {plugin['name']}")
+            st.markdown(plugin['description'])
+            st.markdown(f"**Category:** {plugin['category'].title()}")
+            st.markdown(f"**Pricing:** {plugin['pricing']}")
             
-            st.markdown(f"### {metadata.name}")
-            st.markdown(f"**Version**: {metadata.version} | **Author**: {metadata.author}")
-            st.markdown(metadata.description)
-            st.markdown(f"**Documentation**: [{metadata.documentation_url}]({metadata.documentation_url})")
+            if st.button("Install", key=f"install_{idx}"):
+                st.success(f"Installed {plugin['name']}!")
             
-            st.markdown("---")
-            st.markdown("#### Configuration")
-            
-            # Build config form
-            config = {}
-            for field in config_schema:
-                if field.type == "string":
-                    config[field.name] = st.text_input(
-                        field.label,
-                        value=field.default or "",
-                        help=field.description,
-                        placeholder=field.placeholder,
-                        key=f"config_{field.name}"
-                    )
-                elif field.type == "number":
-                    config[field.name] = st.number_input(
-                        field.label,
-                        value=field.default or 0,
-                        help=field.description,
-                        key=f"config_{field.name}"
-                    )
-                elif field.type == "boolean":
-                    config[field.name] = st.checkbox(
-                        field.label,
-                        value=field.default or False,
-                        help=field.description,
-                        key=f"config_{field.name}"
-                    )
-                elif field.type == "select":
-                    config[field.name] = st.selectbox(
-                        field.label,
-                        options=field.options or [],
-                        index=field.options.index(field.default) if field.default and field.options else 0,
-                        help=field.description,
-                        key=f"config_{field.name}"
-                    )
-                elif field.type == "secret":
-                    config[field.name] = st.text_input(
-                        field.label,
-                        value="",
-                        type="password",
-                        help=field.description,
-                        placeholder=field.placeholder,
-                        key=f"config_{field.name}"
-                    )
-            
-            # Test configuration
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🧪 Test Connection", type="secondary"):
-                    is_valid, error = instance.validate_config(config)
-                    if is_valid:
-                        st.success("✅ Configuration is valid!")
-                    else:
-                        st.error(f"❌ {error}")
-            
-            with col2:
-                if st.button("💾 Save Configuration", type="primary"):
-                    is_valid, error = instance.validate_config(config)
-                    if is_valid:
-                        # Create plugin instance
-                        instance_id = f"{plugin_id}_{len(st.session_state.configured_plugins)}"
-                        manager = st.session_state.plugin_manager
-                        success, msg = manager.create_instance(plugin_id, instance_id, config)
-                        
-                        if success:
-                            st.success(f"✅ Plugin configured as '{instance_id}'")
-                            st.session_state.configured_plugins[instance_id] = config
-                        else:
-                            st.error(f"❌ {msg}")
-                    else:
-                        st.error(f"❌ {error}")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-elif page == "📊 Monitoring":
-    st.markdown("## 📊 Platform Monitoring")
-    st.markdown("Monitor health and performance of your configured plugins")
+elif page == "📊 Pipeline Builder":
+    st.markdown('<div class="main-header">📊 Pipeline Builder</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Manage and monitor your data pipelines</div>', unsafe_allow_html=True)
     
-    if not PLUGINS_AVAILABLE:
-        st.error("Plugin system not initialized")
-        st.stop()
-    
-    manager = st.session_state.plugin_manager
-    instances = manager.list_instances()
-    
-    if not instances:
-        st.info("No plugin instances configured yet. Use the Quick Setup Wizard or Pipeline Builder to get started.")
+    if len(st.session_state.pipelines) == 0:
+        st.info("No pipelines configured yet. Use the Quick Setup Wizard to create your first pipeline!")
+        
+        if st.button("🎯 Go to Quick Setup Wizard", type="primary"):
+            st.info("Navigate to '🎯 Quick Setup Wizard' in the sidebar!")
     else:
-        for instance in instances:
-            with st.expander(f"{instance['plugin_name']} - {instance['instance_id']}", expanded=True):
-                health = manager.health_check(instance['instance_id'])
-                
+        st.markdown(f"### Active Pipelines ({len(st.session_state.pipelines)})")
+        
+        for idx, pipeline in enumerate(st.session_state.pipelines):
+            with st.expander(f"📊 {pipeline['name']}", expanded=idx == 0):
                 col1, col2 = st.columns([3, 1])
                 
                 with col1:
-                    st.markdown(f"**Category**: {instance['plugin_category']}")
-                    st.markdown(f"**Message**: {health.get('message', 'N/A')}")
+                    st.markdown(f"**Created:** {pipeline['created_at']}")
+                    st.markdown(f"**Status:** 🟢 Active")
+                    
+                    config = pipeline['config']
+                    st.markdown(f"**Inputs:** {', '.join(config.get('inputs', []))}")
+                    if config.get('processing'):
+                        st.markdown(f"**Processing:** {', '.join(config.get('processing', []))}")
+                    st.markdown(f"**Outputs:** {', '.join(config.get('outputs', []))}")
+                    if config.get('alerts'):
+                        st.markdown(f"**Alerts:** {', '.join(config.get('alerts', []))}")
                 
                 with col2:
-                    status = health.get('status', 'unknown')
-                    if status == 'healthy':
-                        st.markdown('<div class="status-healthy">● HEALTHY</div>', unsafe_allow_html=True)
-                    else:
-                        st.markdown('<div class="status-warning">⚠ WARNING</div>', unsafe_allow_html=True)
-                
-                if health.get('metrics'):
-                    st.markdown("**Metrics**:")
-                    st.json(health['metrics'])
+                    if st.button("⚙️ Configure", key=f"config_{idx}"):
+                        st.info("Configuration panel would open here")
+                    
+                    if st.button("📊 Metrics", key=f"metrics_{idx}"):
+                        st.info("Metrics dashboard would open here")
+                    
+                    if st.button("🗑️ Delete", key=f"delete_{idx}"):
+                        st.session_state.pipelines.pop(idx)
+                        st.rerun()
 
-elif page == "📚 Documentation":
-    st.markdown("## 📚 Documentation")
+elif page == "⚙️ Settings":
+    st.markdown('<div class="main-header">⚙️ Settings</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Configure your account and preferences</div>', unsafe_allow_html=True)
     
-    with st.expander("🚀 Getting Started", expanded=True):
-        st.markdown("""
-        ### Quick Start Guide
-        
-        1. **Create Workspace** - Set up your organization and select a tier
-        2. **Configure Data Sources** - Connect your log sources (AWS, K8s, etc.)
-        3. **Add Processing** - Transform and enrich your logs
-        4. **Set Destinations** - Route logs to your preferred storage/analytics platform
-        5. **Configure Alerts** - Set up notifications for critical events
-        
-        Use the **Quick Setup Wizard** for guided configuration.
-        """)
+    st.markdown("### Account Settings")
+    st.text_input("Organization Name", value="Demo Organization")
+    st.text_input("Email", value="demo@example.com")
     
-    with st.expander("🔌 Plugin Development"):
-        st.markdown("""
-        ### Creating Custom Plugins
-        
-        1. **Inherit from Base Class**:
-           - `InputPlugin` for data sources
-           - `ProcessingPlugin` for transformations
-           - `OutputPlugin` for destinations
-           - `AlertPlugin` for notifications
-        
-        2. **Implement Required Methods**:
-           ```python
-           class MyPlugin(InputPlugin):
-               @property
-               def metadata(self):
-                   return PluginMetadata(...)
-               
-               @property
-               def config_schema(self):
-                   return [ConfigField(...)]
-               
-               def collect(self):
-                   # Your logic here
-           ```
-        
-        3. **Register Your Plugin**:
-           ```python
-           registry.register(MyPlugin)
-           ```
-        
-        See full documentation at [docs.aiml-obs.com/plugin-development](https://docs.aiml-obs.com)
-        """)
+    st.markdown("---")
+    st.markdown("### Workspace Settings")
+    st.selectbox("Default Region", ["US East", "US West", "EU", "Asia Pacific"])
+    st.selectbox("Data Retention", ["7 days", "30 days", "90 days", "1 year"])
     
-    with st.expander("💡 Best Practices"):
-        st.markdown("""
-        ### Configuration Best Practices
-        
-        - **Start Simple**: Begin with one input, one output
-        - **Test Incrementally**: Add processing steps one at a time
-        - **Monitor Health**: Check plugin health regularly
-        - **Use Batching**: Configure appropriate batch sizes for performance
-        - **Secure Secrets**: Never store credentials in plaintext
-        - **Plan Capacity**: Estimate data volume and set limits
-        """)
+    st.markdown("---")
+    st.markdown("### Notifications")
+    st.checkbox("Email notifications", value=True)
+    st.checkbox("Slack notifications")
+    st.checkbox("PagerDuty integration")
     
-    with st.expander("🔒 Security"):
-        st.markdown("""
-        ### Security Features
-        
-        - **Encryption**: All data encrypted at rest and in transit
-        - **Authentication**: API keys with scoped permissions
-        - **Audit Logging**: Complete audit trail of all changes
-        - **RBAC**: Role-based access control (Admin, Engineer, Viewer)
-        - **Secrets Management**: Secure credential storage
-        - **Network Isolation**: VPC peering and private endpoints
-        """)
+    if st.button("💾 Save Settings", type="primary"):
+        st.success("Settings saved successfully!")
+
+else:  # Documentation
+    st.markdown('<div class="main-header">📚 Documentation</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Learn how to use the platform</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    ## Getting Started
+    
+    ### Quick Setup Wizard
+    The fastest way to get started! The wizard guides you through:
+    1. Creating a workspace
+    2. Selecting input sources
+    3. Configuring processing
+    4. Setting up outputs
+    5. Configuring alerts (optional)
+    6. Deploying your pipeline
+    
+    **Time to complete: 5-10 minutes**
+    
+    ### Plugin Marketplace
+    Browse 50+ plugins across four categories:
+    - **Input Sources**: Ingest data from various sources (CloudWatch, K8s, HTTP, Syslog, etc.)
+    - **Processing**: Transform and enrich your data (parsing, filtering, masking, etc.)
+    - **Outputs**: Send data to destinations (Splunk, S3, Elasticsearch, etc.)
+    - **Alerts**: Get notified (Slack, PagerDuty, Email, Teams, etc.)
+    
+    ### Pipeline Builder
+    Manage your active pipelines:
+    - View pipeline status
+    - Configure settings
+    - Monitor metrics
+    - Start/stop pipelines
+    - Delete pipelines
+    
+    ## Key Concepts
+    
+    ### Workspaces
+    Isolated environments for organizing your pipelines. Each workspace has:
+    - Separate configuration
+    - Independent data storage
+    - Custom access controls
+    
+    ### Pipelines
+    Data flows from input → processing → output, with optional alerts.
+    
+    ### Plugins
+    Modular components that extend platform functionality.
+    
+    ## Pricing
+    
+    ### Starter (FREE)
+    - 10 GB/day ingestion
+    - 7 days retention
+    - 5 users
+    - 5 concurrent plugins
+    - Community support
+    
+    ### Professional ($499/month)
+    - 100 GB/day ingestion
+    - 30 days retention
+    - 25 users
+    - 20 concurrent plugins
+    - Business hours support
+    - SSO integration
+    
+    ### Enterprise (Custom)
+    - Unlimited ingestion
+    - Custom retention
+    - Unlimited users
+    - Unlimited plugins
+    - 24/7 support
+    - Dedicated CSM
+    - 99.9% SLA
+    
+    ## Support
+    
+    - **Community Forum**: https://discuss.yourplatform.com
+    - **Email**: support@yourplatform.com
+    - **Documentation**: https://docs.yourplatform.com
+    - **Status Page**: https://status.yourplatform.com
+    """)
 
 # Footer
 st.markdown("---")
-st.markdown("### 💡 Need Help?")
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("📖 [Documentation](https://docs.aiml-obs.com)")
-with col2:
-    st.markdown("💬 [Community Forum](https://community.aiml-obs.com)")
-with col3:
-    st.markdown("🎫 [Support Tickets](https://support.aiml-obs.com)")
+st.markdown("""
+<div style='text-align: center; color: #666;'>
+    <p>AI/ML Observability Platform v1.0 | <a href='#'>Terms</a> | <a href='#'>Privacy</a> | <a href='#'>Support</a></p>
+    <p>© 2024 Your Company. All rights reserved.</p>
+</div>
+""", unsafe_allow_html=True)
