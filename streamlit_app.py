@@ -1,7 +1,7 @@
 # streamlit_app.py
 """
 AI/ML Observability Platform - Configuration Portal
-Self-service interface for engineers to configure data pipelines
+Professional Edition with Modern UI
 """
 
 import streamlit as st
@@ -31,7 +31,7 @@ if 'wizard_step' not in st.session_state:
 if 'wizard_data' not in st.session_state:
     st.session_state.wizard_data = {}
 
-# Mock plugin data (no imports needed!)
+# Mock plugin data
 MOCK_PLUGINS = {
     'input': [
         {
@@ -155,205 +155,489 @@ MOCK_PLUGINS = {
     ]
 }
 
-# Custom CSS
+# Professional CSS with modern design
 st.markdown("""
 <style>
+    /* Global Styles */
+    .main {
+        background-color: #f8f9fa;
+    }
+    
+    /* Header Styles */
     .main-header {
         font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f77b4;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+    }
+    
+    .sub-header {
+        font-size: 1.1rem;
+        color: #6c757d;
+        margin-bottom: 2rem;
+        font-weight: 400;
+    }
+    
+    /* Metric Cards - Professional Design */
+    .metric-card {
+        background: white;
+        padding: 2rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .metric-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .metric-icon {
+        font-size: 2.5rem;
         margin-bottom: 0.5rem;
     }
-    .sub-header {
-        font-size: 1.2rem;
-        color: #666;
-        margin-bottom: 2rem;
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #212529;
+        margin: 0.5rem 0;
     }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    
+    .metric-sublabel {
+        font-size: 0.85rem;
+        color: #adb5bd;
+        margin-top: 0.25rem;
+    }
+    
+    /* Plugin Cards - Modern Design */
     .plugin-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        margin-bottom: 1rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .plugin-card-free {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    .plugin-card-pro {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-    .metric-card {
         background: white;
         padding: 1.5rem;
         border-radius: 10px;
-        border-left: 4px solid #1f77b4;
+        border: 1px solid #e9ecef;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
     }
-    .success-box {
-        background-color: #d4edda;
+    
+    .plugin-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-color: #667eea;
+        transform: translateY(-2px);
+    }
+    
+    .plugin-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .plugin-icon {
+        font-size: 2rem;
+        margin-right: 0.75rem;
+    }
+    
+    .plugin-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin: 0;
+    }
+    
+    .plugin-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin: 0.5rem 0 1rem 0;
+        line-height: 1.5;
+    }
+    
+    .plugin-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .plugin-category {
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .plugin-pricing {
+        color: #28a745;
+        font-weight: 600;
+    }
+    
+    .plugin-pricing-pro {
+        color: #ffc107;
+        font-weight: 600;
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    /* Alert Boxes */
+    .alert-success {
+        background: #d4edda;
         border: 1px solid #c3e6cb;
-        border-radius: 5px;
-        padding: 1rem;
-        margin: 1rem 0;
-    }
-    .warning-box {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 5px;
-        padding: 1rem;
-        margin: 1rem 0;
-    }
-    .wizard-step {
-        background: #f8f9fa;
-        padding: 1rem;
         border-radius: 8px;
-        margin-bottom: 1rem;
-        border-left: 4px solid #1f77b4;
+        padding: 1rem 1.25rem;
+        color: #155724;
+        margin: 1rem 0;
     }
-    .wizard-step-active {
-        background: #e7f3ff;
-        border-left-color: #0066cc;
+    
+    .alert-info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        color: #0c5460;
+        margin: 1rem 0;
+    }
+    
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        color: #856404;
+        margin: 1rem 0;
+    }
+    
+    /* Wizard Steps */
+    .wizard-progress {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    
+    .wizard-step {
+        text-align: center;
+        padding: 0.75rem;
+    }
+    
+    .wizard-step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin: 0 auto 0.5rem;
+    }
+    
+    .wizard-step-active .wizard-step-number {
+        background: #667eea;
+        color: white;
+    }
+    
+    .wizard-step-complete .wizard-step-number {
+        background: #28a745;
+        color: white;
+    }
+    
+    .wizard-step-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        font-weight: 600;
+    }
+    
+    .wizard-step-active .wizard-step-label {
+        color: #667eea;
+    }
+    
+    /* Section Headers */
+    .section-header {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #212529;
+        margin: 2rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    /* Feature Grid */
+    .feature-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    
+    .feature-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+    
+    .feature-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    
+    /* Buttons Enhancement */
+    .stButton > button {
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.5rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    [data-testid="stSidebar"] .css-1d391kg {
+        color: white;
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 2rem 0;
+        color: #6c757d;
+        border-top: 1px solid #e9ecef;
+        margin-top: 3rem;
+    }
+    
+    .footer a {
+        color: #667eea;
+        text-decoration: none;
+    }
+    
+    .footer a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .metric-card {
+            margin-bottom: 1rem;
+        }
+        
+        .main-header {
+            font-size: 2rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar Navigation
-st.sidebar.title("⚙️ Configuration Portal")
+# Sidebar Navigation with modern styling
+st.sidebar.markdown("# ⚙️ Configuration Portal")
 st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["🏠 Home", "🎯 Quick Setup Wizard", "🔌 Plugin Marketplace", "📊 Pipeline Builder", "⚙️ Settings", "📚 Documentation"]
+    ["🏠 Home", "🎯 Quick Setup Wizard", "🔌 Plugin Marketplace", "📊 Pipeline Builder", "⚙️ Settings", "📚 Documentation"],
+    label_visibility="collapsed"
 )
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📊 Dashboard")
-st.sidebar.markdown("[📈 Open Monitoring Dashboard](#)")
+st.sidebar.markdown("### 📊 Monitoring")
+st.sidebar.markdown("**[Open Dashboard →](#)**")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 💡 Quick Stats")
+st.sidebar.metric("Active Pipelines", len(st.session_state.pipelines))
+st.sidebar.metric("Available Plugins", sum(len(plugins) for plugins in MOCK_PLUGINS.values()))
 
 # Main content based on page selection
 if page == "🏠 Home":
-    st.markdown('<div class="main-header">🚀 AI/ML Observability Platform</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Self-Service Configuration Portal</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">AI/ML Observability Platform</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Enterprise-grade observability for AI/ML systems • Self-service configuration in minutes</div>', unsafe_allow_html=True)
     
+    # Welcome message
     st.markdown("""
-    Welcome to the AI/ML Observability Configuration Portal! This self-service platform allows you to:
+    <div class="alert-info">
+        <strong>🎉 Welcome to the Configuration Portal!</strong><br>
+        Set up comprehensive monitoring for your AI/ML infrastructure without writing a single line of code.
+    </div>
+    """, unsafe_allow_html=True)
     
-    - 🎯 **Configure data pipelines** in minutes without coding
-    - 🔌 **Choose from 50+ plugins** for inputs, processing, outputs, and alerts
-    - 📊 **Monitor your systems** with real-time dashboards
-    - 🚀 **Deploy instantly** with zero DevOps required
+    # Metrics overview
+    st.markdown('<div class="section-header">📊 Platform Overview</div>', unsafe_allow_html=True)
     
-    **Get started in 30 minutes** - No infrastructure setup needed!
-    """)
-    
-    # Stats overview
-    st.markdown("### 📊 Platform Overview")
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown('<div class="plugin-card">', unsafe_allow_html=True)
-        st.markdown("### 🔌 Plugins")
-        total_plugins = sum(len(plugins) for plugins in MOCK_PLUGINS.values())
-        st.markdown(f"### {total_plugins}")
-        st.markdown("Available")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="metric-card">
+            <div class="metric-icon">🔌</div>
+            <div class="metric-value">16</div>
+            <div class="metric-label">Available Plugins</div>
+            <div class="metric-sublabel">Across 4 categories</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        st.markdown('<div class="plugin-card plugin-card-free">', unsafe_allow_html=True)
-        st.markdown("### ⚡ Pipelines")
-        st.markdown(f"### {len(st.session_state.pipelines)}")
-        st.markdown("Configured")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-icon">⚡</div>
+            <div class="metric-value">{len(st.session_state.pipelines)}</div>
+            <div class="metric-label">Active Pipelines</div>
+            <div class="metric-sublabel">Configured & running</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        st.markdown('<div class="plugin-card plugin-card-pro">', unsafe_allow_html=True)
-        st.markdown("### 👥 Workspaces")
-        st.markdown(f"### {len(st.session_state.workspaces) if len(st.session_state.workspaces) > 0 else 'Demo'}")
-        st.markdown("Active")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown("---")
+        st.markdown("""
+        <div class="metric-card">
+            <div class="metric-icon">👥</div>
+            <div class="metric-value">Demo</div>
+            <div class="metric-label">Workspace</div>
+            <div class="metric-sublabel">Development environment</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Quick actions
-    st.markdown("### 🎯 Quick Actions")
+    st.markdown('<div class="section-header">🎯 Quick Actions</div>', unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🎯 Start Quick Setup", type="primary", use_container_width=True):
-            st.info("Navigate to '🎯 Quick Setup Wizard' in the sidebar!")
+        st.button("🚀 Start Quick Setup", type="primary", use_container_width=True, help="Launch the setup wizard")
     
     with col2:
-        if st.button("🔌 Browse Plugins", use_container_width=True):
-            st.info("Navigate to '🔌 Plugin Marketplace' in the sidebar!")
+        st.button("🔌 Browse Plugins", use_container_width=True, help="Explore available plugins")
     
     with col3:
-        if st.button("📚 View Docs", use_container_width=True):
-            st.info("Navigate to '📚 Documentation' in the sidebar!")
+        st.button("📚 View Documentation", use_container_width=True, help="Read the docs")
     
-    st.markdown("---")
-    
-    # Features
-    st.markdown("### ✨ Key Features")
+    # Key features
+    st.markdown('<div class="section-header">✨ Key Features</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        **🚀 Self-Service Configuration**
-        - Visual pipeline builder
-        - No coding required
-        - Test before deploying
-        - Instant activation
+        <div class="feature-item">
+            <div class="feature-title">🚀 Self-Service Configuration</div>
+            <div class="feature-description">
+                Configure data pipelines in minutes with our visual wizard. No coding required—test before deploying and activate instantly.
+            </div>
+        </div>
         
-        **🔌 Plugin Marketplace**
-        - 50+ ready-to-use plugins
-        - Input, processing, output, alerts
-        - Free and premium options
-        - One-click installation
-        """)
+        <div class="feature-item">
+            <div class="feature-title">🔌 Plugin Marketplace</div>
+            <div class="feature-description">
+                Choose from 50+ ready-to-use plugins for inputs, processing, outputs, and alerts. Mix and match to build your perfect pipeline.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
-        **📊 Real-Time Monitoring**
-        - Live dashboards
-        - Performance metrics
-        - Error tracking
-        - Usage analytics
+        <div class="feature-item">
+            <div class="feature-title">📊 Real-Time Monitoring</div>
+            <div class="feature-description">
+                Live dashboards with performance metrics, error tracking, and usage analytics. Know exactly what's happening in your systems.
+            </div>
+        </div>
         
-        **🔒 Enterprise Security**
-        - Multi-tenant isolation
-        - SSO integration
-        - RBAC controls
-        - Audit logging
-        """)
+        <div class="feature-item">
+            <div class="feature-title">🔒 Enterprise Security</div>
+            <div class="feature-description">
+                Multi-tenant workspace isolation, SSO integration, RBAC controls, and comprehensive audit logging for compliance.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Getting started
+    st.markdown('<div class="section-header">🎓 Getting Started</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="feature-item">
+        <strong>Step 1:</strong> Navigate to the <strong>Quick Setup Wizard</strong> in the sidebar<br>
+        <strong>Step 2:</strong> Follow the 6-step process to configure your first pipeline<br>
+        <strong>Step 3:</strong> Deploy and start monitoring in real-time<br><br>
+        <strong>⏱️ Total time: 5-10 minutes</strong>
+    </div>
+    """, unsafe_allow_html=True)
 
 elif page == "🎯 Quick Setup Wizard":
-    st.markdown('<div class="main-header">🎯 Quick Setup Wizard</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Configure your first pipeline in 6 easy steps</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">Quick Setup Wizard</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Configure your observability pipeline in 6 simple steps</div>', unsafe_allow_html=True)
     
     # Progress indicator
+    st.markdown('<div class="wizard-progress">', unsafe_allow_html=True)
     steps = ["Workspace", "Input", "Processing", "Output", "Alerts", "Review"]
     cols = st.columns(6)
     for idx, (col, step) in enumerate(zip(cols, steps)):
         with col:
+            step_class = ""
             if idx + 1 < st.session_state.wizard_step:
-                st.success(f"✅ {step}")
+                step_class = "wizard-step-complete"
+                icon = "✅"
             elif idx + 1 == st.session_state.wizard_step:
-                st.info(f"▶️ {step}")
+                step_class = "wizard-step-active"
+                icon = "▶️"
             else:
-                st.text(f"⭕ {step}")
-    
-    st.markdown("---")
+                icon = f"{idx + 1}"
+            
+            st.markdown(f"""
+            <div class="wizard-step {step_class}">
+                <div class="wizard-step-number">{icon}</div>
+                <div class="wizard-step-label">{step}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Step content
     if st.session_state.wizard_step == 1:
         st.markdown("### Step 1: Create Workspace")
+        st.markdown("Define your workspace for organizing pipelines and resources.")
         
-        workspace_name = st.text_input("Workspace Name", placeholder="e.g., Production ML Monitoring")
+        workspace_name = st.text_input("Workspace Name *", placeholder="e.g., Production ML Monitoring")
         workspace_desc = st.text_area("Description", placeholder="e.g., Monitor production ML models and data pipelines")
         
+        st.markdown("---")
         col1, col2 = st.columns([1, 5])
         with col1:
             if st.button("Next Step ➡️", type="primary"):
@@ -363,21 +647,34 @@ elif page == "🎯 Quick Setup Wizard":
                     st.session_state.wizard_step = 2
                     st.rerun()
                 else:
-                    st.error("Please enter a workspace name")
+                    st.error("⚠️ Please enter a workspace name")
     
     elif st.session_state.wizard_step == 2:
         st.markdown("### Step 2: Select Input Sources")
-        st.markdown("Choose how you want to ingest logs and data:")
+        st.markdown("Choose how you want to ingest logs and metrics into the platform.")
         
         selected_inputs = []
         cols = st.columns(2)
         for idx, plugin in enumerate(MOCK_PLUGINS['input']):
             with cols[idx % 2]:
-                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"input_{idx}"):
+                pricing_class = "plugin-pricing" if plugin['pricing'] == 'Free' else "plugin-pricing-pro"
+                st.markdown(f"""
+                <div class="plugin-card">
+                    <div class="plugin-card-header">
+                        <span class="plugin-icon">{plugin['icon']}</span>
+                        <h3 class="plugin-name">{plugin['name']}</h3>
+                    </div>
+                    <p class="plugin-description">{plugin['description']}</p>
+                    <div class="plugin-meta">
+                        <span class="plugin-category">📁 {plugin['category'].title()}</span>
+                        <span class="{pricing_class}">💰 {plugin['pricing']}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.checkbox(f"Select {plugin['name']}", key=f"input_{idx}"):
                     selected_inputs.append(plugin['name'])
-                st.caption(plugin['description'])
-                st.caption(f"💰 {plugin['pricing']}")
         
+        st.markdown("---")
         col1, col2 = st.columns([1, 5])
         with col1:
             if st.button("⬅️ Back"):
@@ -390,21 +687,34 @@ elif page == "🎯 Quick Setup Wizard":
                     st.session_state.wizard_step = 3
                     st.rerun()
                 else:
-                    st.error("Please select at least one input source")
+                    st.error("⚠️ Please select at least one input source")
     
     elif st.session_state.wizard_step == 3:
         st.markdown("### Step 3: Configure Processing")
-        st.markdown("Choose how to process and enrich your data:")
+        st.markdown("Transform and enrich your data as it flows through the pipeline.")
         
         selected_processing = []
         cols = st.columns(2)
         for idx, plugin in enumerate(MOCK_PLUGINS['processing']):
             with cols[idx % 2]:
-                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"proc_{idx}"):
+                pricing_class = "plugin-pricing" if plugin['pricing'] == 'Free' else "plugin-pricing-pro"
+                st.markdown(f"""
+                <div class="plugin-card">
+                    <div class="plugin-card-header">
+                        <span class="plugin-icon">{plugin['icon']}</span>
+                        <h3 class="plugin-name">{plugin['name']}</h3>
+                    </div>
+                    <p class="plugin-description">{plugin['description']}</p>
+                    <div class="plugin-meta">
+                        <span class="plugin-category">📁 {plugin['category'].title()}</span>
+                        <span class="{pricing_class}">💰 {plugin['pricing']}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.checkbox(f"Select {plugin['name']}", key=f"proc_{idx}"):
                     selected_processing.append(plugin['name'])
-                st.caption(plugin['description'])
-                st.caption(f"💰 {plugin['pricing']}")
         
+        st.markdown("---")
         col1, col2 = st.columns([1, 5])
         with col1:
             if st.button("⬅️ Back"):
@@ -418,17 +728,30 @@ elif page == "🎯 Quick Setup Wizard":
     
     elif st.session_state.wizard_step == 4:
         st.markdown("### Step 4: Select Output Destinations")
-        st.markdown("Choose where to send your processed data:")
+        st.markdown("Define where your processed data should be sent.")
         
         selected_outputs = []
         cols = st.columns(2)
         for idx, plugin in enumerate(MOCK_PLUGINS['output']):
             with cols[idx % 2]:
-                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"output_{idx}"):
+                pricing_class = "plugin-pricing" if plugin['pricing'] == 'Free' else "plugin-pricing-pro"
+                st.markdown(f"""
+                <div class="plugin-card">
+                    <div class="plugin-card-header">
+                        <span class="plugin-icon">{plugin['icon']}</span>
+                        <h3 class="plugin-name">{plugin['name']}</h3>
+                    </div>
+                    <p class="plugin-description">{plugin['description']}</p>
+                    <div class="plugin-meta">
+                        <span class="plugin-category">📁 {plugin['category'].title()}</span>
+                        <span class="{pricing_class}">💰 {plugin['pricing']}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.checkbox(f"Select {plugin['name']}", key=f"output_{idx}"):
                     selected_outputs.append(plugin['name'])
-                st.caption(plugin['description'])
-                st.caption(f"💰 {plugin['pricing']}")
         
+        st.markdown("---")
         col1, col2 = st.columns([1, 5])
         with col1:
             if st.button("⬅️ Back"):
@@ -441,21 +764,34 @@ elif page == "🎯 Quick Setup Wizard":
                     st.session_state.wizard_step = 5
                     st.rerun()
                 else:
-                    st.error("Please select at least one output destination")
+                    st.error("⚠️ Please select at least one output destination")
     
     elif st.session_state.wizard_step == 5:
         st.markdown("### Step 5: Configure Alerts (Optional)")
-        st.markdown("Set up notifications for important events:")
+        st.markdown("Set up notifications to stay informed about important events.")
         
         selected_alerts = []
         cols = st.columns(2)
         for idx, plugin in enumerate(MOCK_PLUGINS['alert']):
             with cols[idx % 2]:
-                if st.checkbox(f"{plugin['icon']} {plugin['name']}", key=f"alert_{idx}"):
+                pricing_class = "plugin-pricing" if plugin['pricing'] == 'Free' else "plugin-pricing-pro"
+                st.markdown(f"""
+                <div class="plugin-card">
+                    <div class="plugin-card-header">
+                        <span class="plugin-icon">{plugin['icon']}</span>
+                        <h3 class="plugin-name">{plugin['name']}</h3>
+                    </div>
+                    <p class="plugin-description">{plugin['description']}</p>
+                    <div class="plugin-meta">
+                        <span class="plugin-category">📁 {plugin['category'].title()}</span>
+                        <span class="{pricing_class}">💰 {plugin['pricing']}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.checkbox(f"Select {plugin['name']}", key=f"alert_{idx}"):
                     selected_alerts.append(plugin['name'])
-                st.caption(plugin['description'])
-                st.caption(f"💰 {plugin['pricing']}")
         
+        st.markdown("---")
         col1, col2 = st.columns([1, 5])
         with col1:
             if st.button("⬅️ Back"):
@@ -469,10 +805,14 @@ elif page == "🎯 Quick Setup Wizard":
     
     elif st.session_state.wizard_step == 6:
         st.markdown("### Step 6: Review & Deploy")
-        st.markdown("Review your configuration and deploy:")
+        st.markdown("Review your configuration and deploy your pipeline.")
         
-        st.markdown('<div class="success-box">', unsafe_allow_html=True)
-        st.markdown("#### ✅ Configuration Summary")
+        st.markdown("""
+        <div class="alert-success">
+            <h4>✅ Configuration Complete!</h4>
+            <p>Your pipeline is ready to deploy. Review the summary below:</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.markdown(f"**Workspace:** {st.session_state.wizard_data.get('workspace_name', 'N/A')}")
         st.markdown(f"**Description:** {st.session_state.wizard_data.get('workspace_desc', 'N/A')}")
@@ -495,45 +835,48 @@ elif page == "🎯 Quick Setup Wizard":
             for alert_name in st.session_state.wizard_data.get('alerts', []):
                 st.markdown(f"- {alert_name}")
         
-        st.markdown('</div>', unsafe_allow_html=True)
-        
+        st.markdown("---")
         col1, col2, col3 = st.columns([1, 1, 4])
         with col1:
             if st.button("⬅️ Back"):
                 st.session_state.wizard_step = 5
                 st.rerun()
         with col2:
-            if st.button("🚀 Deploy Now", type="primary"):
+            if st.button("🚀 Deploy Pipeline", type="primary"):
                 # Save pipeline
                 new_pipeline = {
                     'name': st.session_state.wizard_data.get('workspace_name'),
                     'created_at': datetime.now().isoformat(),
-                    'config': st.session_state.wizard_data
+                    'config': st.session_state.wizard_data,
+                    'status': 'active'
                 }
                 st.session_state.pipelines.append(new_pipeline)
                 
-                st.success("🎉 Pipeline deployed successfully!")
+                st.markdown("""
+                <div class="alert-success">
+                    <h3>🎉 Pipeline Deployed Successfully!</h3>
+                    <p>Your pipeline is now active and processing data.</p>
+                </div>
+                """, unsafe_allow_html=True)
                 st.balloons()
                 
                 # Reset wizard
                 st.session_state.wizard_step = 1
                 st.session_state.wizard_data = {}
-                
-                st.info("Your pipeline is now active! Check the Pipeline Builder to manage it.")
 
 elif page == "🔌 Plugin Marketplace":
-    st.markdown('<div class="main-header">🔌 Plugin Marketplace</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Browse and install plugins to extend your platform</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">Plugin Marketplace</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Explore and install plugins to extend your observability platform</div>', unsafe_allow_html=True)
     
-    # Category tabs
+    # Category filter
     category = st.radio(
-        "Category",
-        ["All", "Input Sources", "Processing", "Outputs", "Alerts"],
+        "Filter by Category",
+        ["All Plugins", "Input Sources", "Processing", "Outputs", "Alerts"],
         horizontal=True
     )
     
     # Filter plugins
-    if category == "All":
+    if category == "All Plugins":
         plugins_to_show = []
         for cat_plugins in MOCK_PLUGINS.values():
             plugins_to_show.extend(cat_plugins)
@@ -546,33 +889,51 @@ elif page == "🔌 Plugin Marketplace":
     else:  # Alerts
         plugins_to_show = MOCK_PLUGINS['alert']
     
+    st.markdown(f"### {len(plugins_to_show)} Plugins Available")
+    
     # Display plugins in grid
     cols = st.columns(3)
     for idx, plugin in enumerate(plugins_to_show):
         with cols[idx % 3]:
-            pricing_class = "plugin-card" if plugin['pricing'] == 'Free' else "plugin-card-pro"
-            st.markdown(f'<div class="{pricing_class}">', unsafe_allow_html=True)
-            st.markdown(f"## {plugin['icon']} {plugin['name']}")
-            st.markdown(plugin['description'])
-            st.markdown(f"**Category:** {plugin['category'].title()}")
-            st.markdown(f"**Pricing:** {plugin['pricing']}")
+            pricing_class = "plugin-pricing" if plugin['pricing'] == 'Free' else "plugin-pricing-pro"
+            st.markdown(f"""
+            <div class="plugin-card">
+                <div class="plugin-card-header">
+                    <span class="plugin-icon">{plugin['icon']}</span>
+                    <h3 class="plugin-name">{plugin['name']}</h3>
+                </div>
+                <p class="plugin-description">{plugin['description']}</p>
+                <div class="plugin-meta">
+                    <span class="plugin-category">📁 {plugin['category'].title()}</span>
+                    <span class="{pricing_class}">💰 {plugin['pricing']}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
-            if st.button("Install", key=f"install_{idx}"):
-                st.success(f"Installed {plugin['name']}!")
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button("📥 Install", key=f"install_{idx}", use_container_width=True):
+                    st.success(f"✅ Installed {plugin['name']}!")
+            with col_b:
+                if st.button("ℹ️ Details", key=f"details_{idx}", use_container_width=True):
+                    st.info(f"Details for {plugin['name']}")
 
 elif page == "📊 Pipeline Builder":
-    st.markdown('<div class="main-header">📊 Pipeline Builder</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Manage and monitor your data pipelines</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">Pipeline Builder</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Manage and monitor your active data pipelines</div>', unsafe_allow_html=True)
     
     if len(st.session_state.pipelines) == 0:
-        st.info("No pipelines configured yet. Use the Quick Setup Wizard to create your first pipeline!")
+        st.markdown("""
+        <div class="alert-info">
+            <h4>📝 No Pipelines Yet</h4>
+            <p>Get started by creating your first pipeline using the Quick Setup Wizard.</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        if st.button("🎯 Go to Quick Setup Wizard", type="primary"):
-            st.info("Navigate to '🎯 Quick Setup Wizard' in the sidebar!")
+        if st.button("🎯 Launch Quick Setup Wizard", type="primary"):
+            st.info("Navigate to '🎯 Quick Setup Wizard' in the sidebar to begin!")
     else:
-        st.markdown(f"### Active Pipelines ({len(st.session_state.pipelines)})")
+        st.markdown(f'<div class="section-header">Active Pipelines ({len(st.session_state.pipelines)})</div>', unsafe_allow_html=True)
         
         for idx, pipeline in enumerate(st.session_state.pipelines):
             with st.expander(f"📊 {pipeline['name']}", expanded=idx == 0):
@@ -580,10 +941,10 @@ elif page == "📊 Pipeline Builder":
                 
                 with col1:
                     st.markdown(f"**Created:** {pipeline['created_at']}")
-                    st.markdown(f"**Status:** 🟢 Active")
+                    st.markdown('<span class="status-badge status-active">🟢 Active</span>', unsafe_allow_html=True)
                     
                     config = pipeline['config']
-                    st.markdown(f"**Inputs:** {', '.join(config.get('inputs', []))}")
+                    st.markdown(f"\n**Inputs:** {', '.join(config.get('inputs', []))}")
                     if config.get('processing'):
                         st.markdown(f"**Processing:** {', '.join(config.get('processing', []))}")
                     st.markdown(f"**Outputs:** {', '.join(config.get('outputs', []))}")
@@ -591,124 +952,135 @@ elif page == "📊 Pipeline Builder":
                         st.markdown(f"**Alerts:** {', '.join(config.get('alerts', []))}")
                 
                 with col2:
-                    if st.button("⚙️ Configure", key=f"config_{idx}"):
-                        st.info("Configuration panel would open here")
+                    if st.button("⚙️ Configure", key=f"config_{idx}", use_container_width=True):
+                        st.info("Configuration panel")
                     
-                    if st.button("📊 Metrics", key=f"metrics_{idx}"):
-                        st.info("Metrics dashboard would open here")
+                    if st.button("📊 Metrics", key=f"metrics_{idx}", use_container_width=True):
+                        st.info("Metrics dashboard")
                     
-                    if st.button("🗑️ Delete", key=f"delete_{idx}"):
+                    if st.button("🗑️ Delete", key=f"delete_{idx}", use_container_width=True):
                         st.session_state.pipelines.pop(idx)
                         st.rerun()
 
 elif page == "⚙️ Settings":
-    st.markdown('<div class="main-header">⚙️ Settings</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Configure your account and preferences</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">Settings</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Configure your account and workspace preferences</div>', unsafe_allow_html=True)
     
-    st.markdown("### Account Settings")
+    st.markdown('<div class="section-header">Account Settings</div>', unsafe_allow_html=True)
     st.text_input("Organization Name", value="Demo Organization")
-    st.text_input("Email", value="demo@example.com")
+    st.text_input("Email Address", value="demo@example.com")
+    
+    st.markdown('<div class="section-header">Workspace Settings</div>', unsafe_allow_html=True)
+    st.selectbox("Default Region", ["US East (N. Virginia)", "US West (Oregon)", "EU (Ireland)", "Asia Pacific (Tokyo)"])
+    st.selectbox("Data Retention Period", ["7 days", "30 days", "90 days", "1 year", "Custom"])
+    
+    st.markdown('<div class="section-header">Notifications</div>', unsafe_allow_html=True)
+    st.checkbox("📧 Email notifications", value=True)
+    st.checkbox("💬 Slack notifications")
+    st.checkbox("🚨 PagerDuty integration")
     
     st.markdown("---")
-    st.markdown("### Workspace Settings")
-    st.selectbox("Default Region", ["US East", "US West", "EU", "Asia Pacific"])
-    st.selectbox("Data Retention", ["7 days", "30 days", "90 days", "1 year"])
-    
-    st.markdown("---")
-    st.markdown("### Notifications")
-    st.checkbox("Email notifications", value=True)
-    st.checkbox("Slack notifications")
-    st.checkbox("PagerDuty integration")
-    
     if st.button("💾 Save Settings", type="primary"):
-        st.success("Settings saved successfully!")
+        st.success("✅ Settings saved successfully!")
 
 else:  # Documentation
-    st.markdown('<div class="main-header">📚 Documentation</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Learn how to use the platform</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">Documentation</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Everything you need to know about the platform</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="section-header">Getting Started</div>', unsafe_allow_html=True)
     
     st.markdown("""
-    ## Getting Started
-    
     ### Quick Setup Wizard
-    The fastest way to get started! The wizard guides you through:
-    1. Creating a workspace
-    2. Selecting input sources
-    3. Configuring processing
-    4. Setting up outputs
-    5. Configuring alerts (optional)
-    6. Deploying your pipeline
+    The fastest way to configure your observability pipeline:
     
-    **Time to complete: 5-10 minutes**
+    1. **Create Workspace** - Define your organizational workspace
+    2. **Select Inputs** - Choose your data sources
+    3. **Configure Processing** - Transform and enrich data
+    4. **Set Outputs** - Define destinations
+    5. **Add Alerts** - Set up notifications (optional)
+    6. **Deploy** - Activate your pipeline
     
-    ### Plugin Marketplace
-    Browse 50+ plugins across four categories:
-    - **Input Sources**: Ingest data from various sources (CloudWatch, K8s, HTTP, Syslog, etc.)
-    - **Processing**: Transform and enrich your data (parsing, filtering, masking, etc.)
-    - **Outputs**: Send data to destinations (Splunk, S3, Elasticsearch, etc.)
-    - **Alerts**: Get notified (Slack, PagerDuty, Email, Teams, etc.)
-    
-    ### Pipeline Builder
-    Manage your active pipelines:
-    - View pipeline status
-    - Configure settings
-    - Monitor metrics
-    - Start/stop pipelines
-    - Delete pipelines
-    
-    ## Key Concepts
-    
-    ### Workspaces
-    Isolated environments for organizing your pipelines. Each workspace has:
-    - Separate configuration
-    - Independent data storage
-    - Custom access controls
-    
-    ### Pipelines
-    Data flows from input → processing → output, with optional alerts.
-    
-    ### Plugins
-    Modular components that extend platform functionality.
-    
-    ## Pricing
-    
-    ### Starter (FREE)
-    - 10 GB/day ingestion
-    - 7 days retention
-    - 5 users
-    - 5 concurrent plugins
-    - Community support
-    
-    ### Professional ($499/month)
-    - 100 GB/day ingestion
-    - 30 days retention
-    - 25 users
-    - 20 concurrent plugins
-    - Business hours support
-    - SSO integration
-    
-    ### Enterprise (Custom)
-    - Unlimited ingestion
-    - Custom retention
-    - Unlimited users
-    - Unlimited plugins
-    - 24/7 support
-    - Dedicated CSM
-    - 99.9% SLA
-    
-    ## Support
-    
-    - **Community Forum**: https://discuss.yourplatform.com
-    - **Email**: support@yourplatform.com
-    - **Documentation**: https://docs.yourplatform.com
-    - **Status Page**: https://status.yourplatform.com
+    **⏱️ Time to complete: 5-10 minutes**
     """)
+    
+    st.markdown('<div class="section-header">Plugin Categories</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### Input Sources (4 plugins)
+    Ingest data from various sources:
+    - **HTTP Endpoint**: Receive logs via HTTP POST
+    - **AWS CloudWatch**: Stream from CloudWatch Logs
+    - **Kubernetes**: Collect from K8s clusters
+    - **Syslog**: Standard syslog protocol
+    
+    ### Processing (4 plugins)
+    Transform and enrich your data:
+    - **JSON Parser**: Parse and flatten JSON
+    - **Regex Parser**: Extract fields with regex
+    - **PII Masking**: Mask sensitive data
+    - **Geo-IP Lookup**: Add location data
+    
+    ### Outputs (4 plugins)
+    Send data to destinations:
+    - **Webhook**: HTTP endpoints
+    - **Splunk HEC**: Splunk integration
+    - **S3 Bucket**: AWS S3 storage
+    - **Elasticsearch**: Search and analytics
+    
+    ### Alerts (4 plugins)
+    Get notified about events:
+    - **Slack**: Team notifications
+    - **PagerDuty**: Incident management
+    - **Email**: Email alerts
+    - **Microsoft Teams**: Team collaboration
+    """)
+    
+    st.markdown('<div class="section-header">Pricing Tiers</div>', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        **Starter (FREE)**
+        - 10 GB/day ingestion
+        - 7 days retention
+        - 5 users
+        - 5 concurrent plugins
+        - Community support
+        """)
+    
+    with col2:
+        st.markdown("""
+        **Professional ($499/mo)**
+        - 100 GB/day ingestion
+        - 30 days retention
+        - 25 users
+        - 20 concurrent plugins
+        - Business support
+        - SSO integration
+        """)
+    
+    with col3:
+        st.markdown("""
+        **Enterprise (Custom)**
+        - Unlimited ingestion
+        - Custom retention
+        - Unlimited users
+        - Unlimited plugins
+        - 24/7 premium support
+        - 99.9% SLA
+        """)
 
-# Footer
-st.markdown("---")
+# Professional Footer
 st.markdown("""
-<div style='text-align: center; color: #666;'>
-    <p>AI/ML Observability Platform v1.0 | <a href='#'>Terms</a> | <a href='#'>Privacy</a> | <a href='#'>Support</a></p>
-    <p>© 2024 Your Company. All rights reserved.</p>
+<div class="footer">
+    <p><strong>AI/ML Observability Platform</strong> v1.0</p>
+    <p>
+        <a href="#">Terms of Service</a> • 
+        <a href="#">Privacy Policy</a> • 
+        <a href="#">Documentation</a> • 
+        <a href="#">Support</a>
+    </p>
+    <p style="color: #adb5bd; font-size: 0.85rem;">© 2024 Your Company. All rights reserved.</p>
 </div>
 """, unsafe_allow_html=True)
