@@ -1,6 +1,6 @@
 """
-Login UI Module - Ultra-Centered Professional Design
-Provides login, registration, and password reset interfaces
+Login UI Module - Config Portal Edition
+Centered professional design without purple gradient
 """
 
 import streamlit as st
@@ -8,7 +8,7 @@ import auth
 import time
 
 def show_login_page():
-    """Display ultra-centered professional login page"""
+    """Display professional centered login page for Config Portal"""
     
     # Initialize session state
     auth.init_session_state()
@@ -18,7 +18,7 @@ def show_login_page():
         show_authenticated_ui()
         return
     
-    # Ultra-professional centered login page styling with aggressive centering
+    # Professional centered login page styling - Clean design without purple
     st.markdown("""
     <style>
         /* FORCE hide sidebar on login page */
@@ -28,10 +28,10 @@ def show_login_page():
         
         /* FORCE center the main content with margin auto */
         .main .block-container {
-            max-width: 480px !important;
+            max-width: 450px !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            padding-top: 3rem !important;
+            padding-top: 4rem !important;
             padding-bottom: 3rem !important;
             padding-left: 2rem !important;
             padding-right: 2rem !important;
@@ -42,9 +42,9 @@ def show_login_page():
             padding-top: 0 !important;
         }
         
-        /* Center everything inside */
+        /* Clean background - professional gray */
         .stApp {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
         
         /* Login container card */
@@ -52,7 +52,7 @@ def show_login_page():
             background: white;
             padding: 2.5rem;
             border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             margin: 0 auto;
         }
         
@@ -63,8 +63,8 @@ def show_login_page():
         }
         
         .login-header h1 {
-            color: #1e40af;
-            font-size: 1.875rem;
+            color: #1e3a8a;
+            font-size: 1.75rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
             line-height: 1.2;
@@ -96,7 +96,7 @@ def show_login_page():
         }
         
         .stTabs [aria-selected="true"] {
-            background: #eff6ff;
+            background: #dbeafe;
             color: #1e40af;
         }
         
@@ -133,14 +133,15 @@ def show_login_page():
         }
         
         .stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
             border: none !important;
             color: white !important;
         }
         
         .stButton > button[kind="primary"]:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%) !important;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+            transform: translateY(-1px);
         }
         
         /* Checkbox styling */
@@ -156,7 +157,7 @@ def show_login_page():
         /* Footer styling */
         .login-footer {
             text-align: center;
-            color: white;
+            color: #64748b;
             font-size: 0.813rem;
             margin-top: 2rem;
             line-height: 1.6;
@@ -164,7 +165,6 @@ def show_login_page():
         
         .login-footer p {
             margin: 0.25rem 0;
-            opacity: 0.9;
         }
         
         /* Form container */
@@ -197,14 +197,18 @@ def show_login_page():
             .login-container {
                 padding: 1.5rem;
             }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
         }
     </style>
     """, unsafe_allow_html=True)
     
-    # Login header
+    # Login header - Updated for Config Portal
     st.markdown("""
     <div class="login-header">
-        <h1>🔐 AI/ML Observability Platform</h1>
+        <h1>⚙️ AI/ML Configuration Portal</h1>
         <p>Please sign in to continue</p>
     </div>
     """, unsafe_allow_html=True)
@@ -324,10 +328,10 @@ def show_login_page():
                         else:
                             st.error("❌ Failed to send reset email. Please try again.")
     
-    # Footer
+    # Footer - Updated for Config Portal
     st.markdown("""
     <div class="login-footer">
-        <p>© 2024 AI/ML Observability Platform • Secure Authentication via Firebase</p>
+        <p>© 2024 AI/ML Configuration Portal • Secure Authentication via Firebase</p>
         <p>Need help? Contact support@yourcompany.com</p>
     </div>
     """, unsafe_allow_html=True)
