@@ -1,5 +1,7 @@
-streamlit>=1.29.0
-pandas>=2.0.0
-numpy>=1.24.0
-plotly>=5.17.0
-python-dateutil>=2.8.2
+streamlit==1.32.0
+pandas
+numpy
+plotly
+firebase-admin==6.4.0
+google-cloud-firestore==2.14.0
+python-dotenv==1.0.0
